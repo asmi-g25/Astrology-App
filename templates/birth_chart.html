@@ -1,0 +1,542 @@
+{% extends "base.html" %}
+
+{% block title %}Birth Chart - {{ user.full_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Header -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="display-5 mb-2">
+                            <i class="fas fa-chart-pie text-primary me-3"></i>
+                            Birth Chart (Kundali)
+                        </h1>
+                        <p class="lead mb-0">{{ user.full_name }}</p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('download_birth_chart', user_id=user.id) }}" 
+                           class="btn btn-success me-2">
+                            <i class="fas fa-download me-2"></i>Download PDF
+                        </a>
+                        <a href="{{ url_for('user_profile', user_id=user.id) }}" 
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Profile
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Personal Information -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    Personal Information
+                </h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Birth Date:</strong></td>
+                        <td>{{ user.birth_date.strftime('%B %d, %Y') }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Birth Time:</strong></td>
+                        <td>{{ user.birth_time[:5] }} ({{ user.birth_timezone }})</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Birth Place:</strong></td>
+                        <td>{{ user.birth_city }}, {{ user.birth_country }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Julian Day:</strong></td>
+                        <td>{{ "%.5f"|format(birth_chart_data.jd_birth) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🌞 Sun Longitude:</strong></td>
+                        <td>{{ "%.2f°"|format(birth_chart_data.planet_positions.Sun) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🌙 Moon Longitude:</strong></td>
+                        <td>{{ "%.2f°"|format(birth_chart_data.planet_positions.Moon) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🌓 Lunar Phase:</strong></td>
+                        <td>{{ "%.2f°"|format(birth_chart_data.phase_angle) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>⭐ Birth Nakshatra:</strong></td>
+                        <td>{{ birth_chart_data.birth_nakshatra }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🌙 Birth Tithi:</strong></td>
+                        <td>{{ birth_chart_data.birth_tithi_name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>🔼 Ascendant:</strong></td>
+                        <td>{{ "%.2f°"|format(birth_chart_data.ascendant) }} in {{ birth_chart_data.ascendant_sign }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Numerology -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-calculator me-2"></i>
+                    Numerology Analysis
+                </h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Pythagorean Expression #:</strong></td>
+                        <td><span class="badge bg-primary">{{ numerology.pythagorean_expression }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Chaldean Expression #:</strong></td>
+                        <td><span class="badge bg-secondary">{{ numerology.chaldean_expression }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Driver Number:</strong></td>
+                        <td><span class="badge bg-info">{{ numerology.driver_number }}</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Conductor Number (Life Path):</strong></td>
+                        <td><span class="badge bg-success">{{ numerology.conductor_number }}</span></td>
+                    </tr>
+                </table>
+
+                {% if auspicious_matches %}
+                <div class="alert alert-warning mt-3">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-flag me-2"></i>
+                        Auspicious Signals Detected
+                    </h6>
+                    <ul class="mb-0">
+                        {% for match in auspicious_matches %}
+                        <li>{{ match }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- South Indian Style Kundali Chart (With Sign Numbers) -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-th me-2"></i>
+                    Kundali Chart (South Indian Style)
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="kundali-chart mx-auto" style="max-width: 500px;">
+                    {% set planet_abbr = {'Sun': 'Su', 'Moon': 'Mo', 'Mercury': 'Me', 'Venus': 'Ve', 'Mars': 'Ma', 'Jupiter': 'Ju', 'Saturn': 'Sa', 'Rahu': 'Ra', 'Ketu': 'Ke'} %}
+                    
+                    <table class="table table-bordered border-dark" style="table-layout: fixed;">
+                        <!-- Row 1: Houses 12, 1, 2, 3 -->
+                        <tr>
+                            <td class="house-cell" style="height: 100px; width: 25%; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">12</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 11) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 12 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="house-cell" style="height: 100px; width: 25%; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">1</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 0) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 1 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="house-cell" style="height: 100px; width: 25%; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">2</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 1) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 2 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="house-cell" style="height: 100px; width: 25%; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">3</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 2) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 3 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row 2: Houses 11, (empty), (empty), 4 -->
+                        <tr>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">11</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 10) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 11 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="center-cell" style="height: 100px; background: #e9ecef; border-right: none;"></td>
+                            <td class="center-cell" style="height: 100px; background: #e9ecef; border-left: none;"></td>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">4</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 3) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 4 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row 3: Houses 10, (empty), (empty), 5 -->
+                        <tr>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">10</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 9) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 10 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="center-cell" style="height: 100px; background: #e9ecef; border-right: none;"></td>
+                            <td class="center-cell" style="height: 100px; background: #e9ecef; border-left: none;"></td>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">5</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 4) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 5 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row 4: Houses 9, 8, 7, 6 -->
+                        <tr>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">9</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 8) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 9 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">8</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 7) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 8 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">7</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 6) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 7 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="house-cell" style="height: 100px; position: relative; background: #f8f9fa;">
+                                <!-- House number (lighter) -->
+                                <div class="house-number" style="position: absolute; top: 3px; left: 5px; font-size: 10px; font-weight: normal; color: #aaa;">6</div>
+                                <!-- Sign number -->
+                                {% set sign_num = (birth_chart_data.ascendant_sign_index + 5) % 12 + 1 %}
+                                <div class="sign-number" style="position: absolute; top: 3px; right: 5px; font-size: 12px; font-weight: bold; color: #0066cc;">
+                                    {{ sign_num }}
+                                </div>
+                                <!-- Planets -->
+                                <div class="planets" style="font-size: 18px; font-weight: bold; color: #d63384; text-align: center; margin-top: 25px;">
+                                    {% for planet, house in birth_chart_data.planet_houses.items() %}
+                                        {% if house == 6 %}
+                                            <div>{{ planet_abbr.get(planet, planet[:2]) }}</div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        South Indian style Kundali showing planetary positions in houses<br>
+                        <strong>Chart Layout:</strong> House numbers (light gray) in top-left, Sign numbers (blue) in top-right, Planets (red) in center<br>
+                        <strong>Sign Numbers:</strong> 1=Aries, 2=Taurus, 3=Gemini, 4=Cancer, 5=Leo, 6=Virgo, 7=Libra, 8=Scorpio, 9=Sagittarius, 10=Capricorn, 11=Aquarius, 12=Pisces<br>
+                        <strong>Planet Abbreviations:</strong> Su=Sun, Mo=Moon, Me=Mercury, Ve=Venus, Ma=Mars, Ju=Jupiter, Sa=Saturn, Ra=Rahu, Ke=Ketu<br>
+                        <strong>Lagna (Ascendant):</strong> House 1 = Sign {{ (birth_chart_data.ascendant_sign_index + 1) }} ({{ birth_chart_data.ascendant_sign }})
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rest remains the same -->
+<!-- Planetary Positions -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-globe me-2"></i>
+                    Planetary Positions & House Placements
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Planet</th>
+                                <th>Longitude</th>
+                                <th>Sign</th>
+                                <th>Degrees in Sign</th>
+                                <th>House</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for planet, longitude in birth_chart_data.planet_positions.items() %}
+                            {% set sign_name = (longitude // 30)|int %}
+                            {% set deg_in_sign = longitude % 30 %}
+                            <tr>
+                                <td>
+                                    <strong>
+                                        {% if planet == 'Sun' %}🌞{% endif %}
+                                        {% if planet == 'Moon' %}🌙{% endif %}
+                                        {% if planet == 'Mercury' %}☿{% endif %}
+                                        {% if planet == 'Venus' %}♀{% endif %}
+                                        {% if planet == 'Mars' %}♂{% endif %}
+                                        {% if planet == 'Jupiter' %}♃{% endif %}
+                                        {% if planet == 'Saturn' %}♄{% endif %}
+                                        {% if planet == 'Rahu' %}☊{% endif %}
+                                        {% if planet == 'Ketu' %}☋{% endif %}
+                                        {{ planet }}
+                                    </strong>
+                                </td>
+                                <td>{{ "%.2f°"|format(longitude) }}</td>
+                                <td>{{ ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'][sign_name] }}</td>
+                                <td>{{ "%.2f°"|format(deg_in_sign) }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ birth_chart_data.planet_houses[planet] }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Houses and Signs -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-home me-2"></i>
+                    Houses and Their Ruling Signs
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for i in range(12) %}
+                    {% set sign_idx = (birth_chart_data.ascendant_sign_index + i) % 12 %}
+                    {% set sign_name = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'][sign_idx] %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card bg-dark border-secondary">
+                            <div class="card-body text-center py-2">
+                                <h6 class="card-title mb-1">House {{ i + 1 }}</h6>
+                                <p class="card-text small mb-0">
+                                    Sign {{ sign_idx + 1 }} - {{ sign_name }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remarks Section -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-sticky-note me-2"></i>
+                    Observations & Remarks
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('update_remarks', user_id=user.id) }}">
+                    <div class="mb-3">
+                        <label for="remarks" class="form-label">Personal Observations:</label>
+                        <textarea class="form-control" 
+                                  id="remarks" 
+                                  name="remarks" 
+                                  rows="4" 
+                                  placeholder="Add your observations about this birth chart, personality traits, predictions, or any other notes...">{{ user.remarks or '' }}</textarea>
+                        <div class="form-text">These remarks will be saved and included in PDF reports.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Remarks
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('calendar_view', user_id=user.id) }}" 
+                       class="btn btn-info">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        View Monthly Calendar
+                    </a>
+                    <a href="{{ url_for('download_birth_chart', user_id=user.id) }}" 
+                       class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>
+                        Download PDF Report
+                    </a>
+                    <a href="{{ url_for('index') }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-home me-2"></i>
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

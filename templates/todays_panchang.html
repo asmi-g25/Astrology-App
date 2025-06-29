@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}Today's Panchang - {{ panchang_data.date.strftime('%B %d, %Y') }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Header -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h1 class="display-4 mb-3">
+                    <i class="fas fa-sun me-3 text-warning"></i>
+                    Today's Panchang
+                </h1>
+                <p class="lead">
+                    {{ panchang_data.date.strftime('%A, %B %d, %Y') }}
+                </p>
+                {% if user %}
+                <p class="text-muted">
+                    <i class="fas fa-user me-2"></i>
+                    Personalized for {{ user.full_name }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Selection -->
+{% if not user and users %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Select Profile for Personalized Panchang
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for profile in users %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <a href="{{ url_for('todays_panchang', user_id=profile.id) }}" 
+                           class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user me-2"></i>
+                            {{ profile.full_name }}
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Sun Times -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-sun me-2"></i>
+                    Sun Times
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-3 mb-3 shadow-sm">
+                            <i class="fas fa-arrow-up fa-2x text-warning mb-2"></i>
+                            <h5 class="text-primary">Sunrise</h5>
+                            <h3 class="mb-0 text-saffron">{{ panchang_data.sun_times.sunrise.strftime('%I:%M %p') }}</h3>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3 mb-3 shadow-sm">
+                            <i class="fas fa-arrow-down fa-2x text-warning mb-2"></i>
+                            <h5 class="text-primary">Sunset</h5>
+                            <h3 class="mb-0 text-saffron">{{ panchang_data.sun_times.sunset.strftime('%I:%M %p') }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        Times calculated for Delhi (28.6139°N, 77.2090°E)
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Raahu Kaal -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header" style="background: linear-gradient(135deg, var(--sacred-red) 0%, #8B0000 100%); color: white;">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Raahu Kaal
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if panchang_data.raahu_kaal.start and panchang_data.raahu_kaal.end %}
+                <div class="raahu-kaal-section">
+                    <div class="raahu-kaal-time">
+                        <i class="fas fa-clock me-2"></i>
+                        {{ panchang_data.raahu_kaal.start.strftime('%I:%M %p') }} - 
+                        {{ panchang_data.raahu_kaal.end.strftime('%I:%M %p') }}
+                    </div>
+                    <div class="raahu-kaal-warning">
+                        ⚠️ Avoid starting new ventures during this period
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6 class="text-sacred-red">About Raahu Kaal:</h6>
+                    <p class="small">
+                        Raahu Kaal is considered an inauspicious time period in Vedic astrology. 
+                        It's advisable to avoid important activities like starting new work, 
+                        travel, or ceremonies during this time.
+                    </p>
+                    <div class="alert alert-warning">
+                        <small>
+                            <i class="fas fa-lightbulb me-1"></i>
+                            <strong>Tip:</strong> This is a good time for meditation, introspection, 
+                            and completing ongoing tasks.
+                        </small>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="fas fa-times-circle fa-2x text-muted mb-2"></i>
+                    <p class="text-muted">Unable to calculate Raahu Kaal for today</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tithi Information -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-moon me-2"></i>
+                    Tithi (Lunar Day)
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="border rounded p-4 mb-3 shadow-sm">
+                        <i class="fas fa-moon fa-3x text-primary mb-3"></i>
+                        <h3 class="text-saffron mb-2">{{ panchang_data.tithi.name }}</h3>
+                        <p class="text-muted mb-0">
+                            Tithi {{ panchang_data.tithi.index + 1 }} of the lunar month
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6 class="text-primary">About Tithi:</h6>
+                    <p class="small">
+                        Tithi represents the lunar day in Vedic calendar, calculated based on 
+                        the angular relationship between the Sun and Moon. Each tithi has 
+                        specific significance for various activities.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nakshatra Information -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-star me-2"></i>
+                    Nakshatra
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="border rounded p-4 mb-3 shadow-sm">
+                        <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                        <h3 class="text-saffron mb-2">{{ panchang_data.nakshatra.name }}</h3>
+                        <p class="text-muted mb-0">
+                            Nakshatra {{ panchang_data.nakshatra.index + 1 }} of 27
+                        </p>
+                    </div>
+                </div>
+                
+                {% if panchang_data.tara %}
+                <div class="mt-3">
+                    <h6 class="text-primary">Tara Relation:</h6>
+                    <div class="tara-info">
+                        <div class="tara-header">
+                            <span class="tara-icon">🌟</span>
+                            <strong>{{ panchang_data.tara.name }}</strong>
+                            {% if panchang_data.tara.name in ['Sadhaka Tara', 'Sampat Tara', 'Atimitra Tara'] %}
+                                <span class="badge bg-success ms-2">Auspicious</span>
+                            {% elif panchang_data.tara.name in ['Vipat Tara', 'Pratyari Tara', 'Vadha Tara'] %}
+                                <span class="badge bg-danger ms-2">Caution</span>
+                            {% else %}
+                                <span class="badge bg-secondary ms-2">Neutral</span>
+                            {% endif %}
+                        </div>
+                        <div class="tara-meaning">{{ panchang_data.tara.meaning }}</div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="mt-3">
+                    <p class="small text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Create a profile to see personalized Tara relation
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Planetary Positions -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-globe me-2"></i>
+                    Planetary Positions (Sidereal)
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 shadow-sm">
+                            <i class="fas fa-sun fa-2x text-warning mb-2"></i>
+                            <h5 class="text-primary">Sun</h5>
+                            <h4 class="text-saffron mb-0">{{ "%.2f°"|format(panchang_data.planetary_positions.sun) }}</h4>
+                            <small class="text-muted">Sidereal Longitude</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3 shadow-sm">
+                            <i class="fas fa-moon fa-2x text-primary mb-2"></i>
+                            <h5 class="text-primary">Moon</h5>
+                            <h4 class="text-saffron mb-0">{{ "%.2f°"|format(panchang_data.planetary_positions.moon) }}</h4>
+                            <small class="text-muted">Sidereal Longitude</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="mb-3">Explore More</h5>
+                <div class="btn-group flex-wrap" role="group">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-home me-2"></i>Home
+                    </a>
+                    {% if user %}
+                    <a href="{{ url_for('calendar_view', user_id=user.id) }}" class="btn btn-info">
+                        <i class="fas fa-calendar me-2"></i>Monthly Calendar
+                    </a>
+                    <a href="{{ url_for('birth_chart', user_id=user.id) }}" class="btn btn-success">
+                        <i class="fas fa-chart-pie me-2"></i>Birth Chart
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('index') }}#createUserForm" class="btn btn-success">
+                        <i class="fas fa-user-plus me-2"></i>Create Profile
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

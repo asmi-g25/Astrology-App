@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Vedic Astrology Calculator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Section -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h1 class="display-4 mb-3">
+                    <i class="fas fa-star-and-crescent text-warning me-3"></i>
+                    Vedic Astrology Calculator
+                </h1>
+                <p class="lead">
+                    Generate personalized birth charts, numerology analysis, and monthly calendars 
+                    with precise Swiss Ephemeris calculations and Tara guidance.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Create New User -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Create New Profile
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_user') }}" id="createUserForm">
+                    <div class="mb-3">
+                        <label for="full_name" class="form-label">Full Name</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="full_name" 
+                               name="full_name" 
+                               required
+                               placeholder="Enter your full name for numerology">
+                        <div class="form-text">Used for numerological calculations</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="birth_date" class="form-label">Birth Date</label>
+                        <input type="date" 
+                               class="form-control" 
+                               id="birth_date" 
+                               name="birth_date" 
+                               required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="birth_time" class="form-label">Birth Time</label>
+                        <input type="time" 
+                               class="form-control" 
+                               id="birth_time" 
+                               name="birth_time" 
+                               required>
+                        <div class="form-text">Local time at birth location</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="birth_city" class="form-label">Birth City</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="birth_city" 
+                                   name="birth_city" 
+                                   value="Delhi"
+                                   required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="birth_country" class="form-label">Birth Country</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="birth_country" 
+                                   name="birth_country" 
+                                   value="India"
+                                   required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="birth_latitude" class="form-label">Latitude</label>
+                            <input type="number" 
+                                   step="0.0001"
+                                   class="form-control" 
+                                   id="birth_latitude" 
+                                   name="birth_latitude" 
+                                   value="28.6139"
+                                   required>
+                            <div class="form-text">Decimal degrees (e.g., 28.6139)</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="birth_longitude" class="form-label">Longitude</label>
+                            <input type="number" 
+                                   step="0.0001"
+                                   class="form-control" 
+                                   id="birth_longitude" 
+                                   name="birth_longitude" 
+                                   value="77.2090"
+                                   required>
+                            <div class="form-text">Decimal degrees (e.g., 77.2090)</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="birth_timezone" class="form-label">
+                            Timezone 
+                            <span class="badge bg-success ms-2" id="timezone-status" style="display: none;">Auto-detected</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="birth_timezone" 
+                                   name="birth_timezone" 
+                                   value="Asia/Kolkata"
+                                   readonly
+                                   required>
+                            <button class="btn btn-outline-secondary" 
+                                    type="button" 
+                                    id="manual-timezone-btn"
+                                    title="Enable manual timezone selection">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <span id="timezone-help">Automatically calculated from coordinates</span>
+                        </div>
+                        
+                        <!-- Hidden manual timezone selector -->
+                        <select class="form-control mt-2" 
+                                id="manual_timezone_select" 
+                                style="display: none;">
+                            <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                            <option value="America/New_York">America/New_York (EST/EDT)</option>
+                            <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                            <option value="Europe/London">Europe/London (GMT/BST)</option>
+                            <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                            <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                            <option value="UTC">UTC</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Generate Birth Chart
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Users -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Saved Profiles ({{ users|length }})
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                    <div class="list-group">
+                        {% for user in users %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas fa-user me-2"></i>
+                                    {{ user.full_name }}
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    {{ user.birth_date.strftime('%B %d, %Y') }} at {{ user.birth_time[:5] }}
+                                </small>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="fas fa-star me-1"></i>
+                                    {{ user.birth_nakshatra }}
+                                </small>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('user_profile', user_id=user.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('birth_chart', user_id=user.id) }}" 
+                                   class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-chart-pie"></i>
+                                </a>
+                                <a href="{{ url_for('calendar_view', user_id=user.id) }}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-user-slash fa-3x mb-3"></i>
+                        <p>No saved profiles yet. Create your first profile to get started!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-magic me-2"></i>
+                    Features
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="feature-item">
+                            <i class="fas fa-chart-line fa-2x text-primary mb-2"></i>
+                            <h5>Birth Chart Generation</h5>
+                            <p class="text-muted">Complete Kundali with planetary positions, houses, and aspects using Swiss Ephemeris.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="feature-item">
+                            <i class="fas fa-calculator fa-2x text-success mb-2"></i>
+                            <h5>Numerology Analysis</h5>
+                            <p class="text-muted">Pythagorean & Chaldean expression numbers, driver & conductor calculations.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="feature-item">
+                            <i class="fas fa-calendar-star fa-2x text-info mb-2"></i>
+                            <h5>Monthly Calendar</h5>
+                            <p class="text-muted">Detailed Tithi and Nakshatra transitions with Tara guidance for auspicious timing.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Automatic timezone detection from coordinates
+document.addEventListener('DOMContentLoaded', function() {
+    const latInput = document.getElementById('birth_latitude');
+    const lonInput = document.getElementById('birth_longitude');
+    const timezoneInput = document.getElementById('birth_timezone');
+    const timezoneStatus = document.getElementById('timezone-status');
+    const timezoneHelp = document.getElementById('timezone-help');
+    const manualBtn = document.getElementById('manual-timezone-btn');
+    const manualSelect = document.getElementById('manual_timezone_select');
+    
+    let isManualMode = false;
+    
+    // Debounce function to avoid too many API calls
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Function to get timezone from coordinates
+    async function updateTimezone() {
+        if (isManualMode) return;
+        
+        const lat = parseFloat(latInput.value);
+        const lon = parseFloat(lonInput.value);
+        
+        if (isNaN(lat) || isNaN(lon)) {
+            timezoneInput.value = 'UTC';
+            timezoneStatus.style.display = 'none';
+            timezoneHelp.textContent = 'Enter valid coordinates to auto-detect timezone';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/timezone?lat=${lat}&lon=${lon}`);
+            const data = await response.json();
+            
+            if (data.timezone) {
+                timezoneInput.value = data.timezone;
+                timezoneStatus.style.display = 'inline';
+                timezoneHelp.textContent = `Auto-detected from coordinates (${lat.toFixed(4)}, ${lon.toFixed(4)})`;
+            } else {
+                timezoneInput.value = 'UTC';
+                timezoneStatus.style.display = 'none';
+                timezoneHelp.textContent = 'Could not detect timezone, using UTC';
+            }
+        } catch (error) {
+            console.error('Error getting timezone:', error);
+            timezoneInput.value = 'UTC';
+            timezoneStatus.style.display = 'none';
+            timezoneHelp.textContent = 'Error detecting timezone, using UTC';
+        }
+    }
+    
+    // Debounced timezone update
+    const debouncedUpdateTimezone = debounce(updateTimezone, 500);
+    
+    // Add event listeners for coordinate changes
+    latInput.addEventListener('input', debouncedUpdateTimezone);
+    lonInput.addEventListener('input', debouncedUpdateTimezone);
+    
+    // Manual timezone selection toggle
+    manualBtn.addEventListener('click', function() {
+        isManualMode = !isManualMode;
+        
+        if (isManualMode) {
+            // Switch to manual mode
+            timezoneInput.style.display = 'none';
+            manualSelect.style.display = 'block';
+            manualSelect.value = timezoneInput.value;
+            manualBtn.innerHTML = '<i class="fas fa-robot"></i>';
+            manualBtn.title = 'Switch back to automatic detection';
+            timezoneStatus.textContent = 'Manual';
+            timezoneStatus.className = 'badge bg-warning ms-2';
+            timezoneHelp.textContent = 'Manual timezone selection enabled';
+        } else {
+            // Switch back to auto mode
+            timezoneInput.style.display = 'block';
+            manualSelect.style.display = 'none';
+            timezoneInput.value = manualSelect.value;
+            manualBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            manualBtn.title = 'Enable manual timezone selection';
+            timezoneStatus.textContent = 'Auto-detected';
+            timezoneStatus.className = 'badge bg-success ms-2';
+            updateTimezone();
+        }
+    });
+    
+    // Update hidden input when manual selection changes
+    manualSelect.addEventListener('change', function() {
+        timezoneInput.value = this.value;
+    });
+    
+    // Initial timezone detection
+    updateTimezone();
+});
+</script>
+{% endblock %}
